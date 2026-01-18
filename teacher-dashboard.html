@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Insegnante - ExamLock</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Stili della dashboard */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .dashboard-header {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-title h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .header-title p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Grid layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        /* Cards */
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .card-header h2 {
+            font-size: 1.5rem;
+            color: #1a2980;
+            margin-left: 15px;
+        }
+        
+        .card-icon {
+            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stats .card-icon { background: #e3f2fd; color: #1976d2; }
+        .sessions .card-icon { background: #e8f5e9; color: #388e3c; }
+        .violations .card-icon { background: #ffebee; color: #d32f2f; }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .total-students .stat-value { color: #1976d2; }
+        .active-now .stat-value { color: #388e3c; }
+        .completed .stat-value { color: #f57c00; }
+        .violation-count .stat-value { color: #d32f2f; }
+        
+        /* List items */
+        .session-item, .violation-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4285f4;
+            transition: background 0.3s;
+        }
+        
+        .session-item:hover, .violation-item:hover {
+            background: #e9ecef;
+        }
+        
+        .violation-item {
+            border-left-color: #ff4444;
+        }
+        
+        .session-info, .violation-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .student-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #1a2980;
+        }
+        
+        .student-class {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .session-time, .violation-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .violation-type {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+        
+        /* Log card */
+        .log-card {
+            grid-column: 1 / -1;
+        }
+        
+        .log-content {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .log-line {
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .log-time {
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .log-message {
+            color: #333;
+        }
+        
+        .log-violation {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        
+        .log-success {
+            color: #388e3c;
+            font-weight: bold;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .refresh-btn {
+            background: #4285f4;
+            color: white;
+        }
+        
+        .export-btn {
+            background: #34a853;
+            color: white;
+        }
+        
+        .clear-btn {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .simulate-btn {
+            background: #9c27b0;
+            color: white;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- SISTEMA DI LOGIN SICURO -->
+    <div id="loginScreen" style="display: none;">
+        <div class="container" style="max-width: 500px; margin-top: 100px;">
+            <div class="dashboard-card" style="text-align: center;">
+                <div class="card-header" style="justify-content: center; border: none;">
+                    <div class="card-icon" style="background: #1a2980; color: white;">
+                        🔐
+                    </div>
+                    <h2 style="margin-left: 15px;">Accesso Insegnante</h2>
+                </div>
+                
+                <div style="padding: 30px 20px;">
+                    <h3 style="margin-bottom: 20px; color: #1a2980;">ExamLock Dashboard</h3>
+                    <p style="margin-bottom: 30px; color: #666;">
+                        Inserisci la password per accedere al pannello di monitoraggio
+                    </p>
+                    
+                    <div style="margin: 30px 0;">
+                        <input type="password" id="passwordInput" 
+                               style="width: 100%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 10px; text-align: center;"
+                               placeholder="Inserisci password"
+                               autofocus>
+                        <div style="margin-top: 10px; font-size: 14px; color: #999;">
+                            Password di default: <code>insegnante123</code>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button id="loginBtn" class="control-btn refresh-btn" style="padding: 15px 40px;">
+                            🔓 ACCEDI
+                        </button>
+                        <button onclick="window.location.href='index.html'" 
+                                class="control-btn" style="background: #666; color: white; padding: 15px 30px;">
+                            ↩️ ANNULLA
+                        </button>
+                    </div>
+                    
+                    <div id="loginError" style="margin-top: 20px; color: #ff4444; display: none;">
+                        ❌ Password errata. Riprova.
+                    </div>
+                    
+                    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px; font-size: 14px;">
+                        <strong>⚠️ Modalità Testing:</strong> Per disabilitare la password, modifica il file 
+                        <code>teacher-dashboard.html</code> e commenta il sistema di login.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DASHBOARD PRINCIPALE (visibile solo dopo login) -->
+    <div id="dashboardContent" style="display: none;">
+        <div class="container">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-title">
+                    <h1>📊 Dashboard Insegnante</h1>
+                    <p>ExamLock System - Monitoraggio in tempo reale</p>
+                    <div style="margin-top: 10px; font-size: 14px; opacity: 0.8;">
+                        Ultimo aggiornamento: <span id="lastUpdate">--:--</span>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="teacherLogout()">
+                    🚪 Logout
+                </button>
+            </header>
+            
+            <!-- Grid principale -->
+            <div class="dashboard-grid">
+                <!-- Statistiche -->
+                <div class="dashboard-card stats">
+                    <div class="card-header">
+                        <div class="card-icon">📈</div>
+                        <h2>Statistiche Quiz</h2>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item total-students">
+                            <div class="stat-value" id="totalStudents">0</div>
+                            <div class="stat-label">Studenti Totali</div>
+                        </div>
+                        <div class="stat-item active-now">
+                            <div class="stat-value" id="activeNow">0</div>
+                            <div class="stat-label">Attivi Ora</div>
+                        </div>
+                        <div class="stat-item completed">
+                            <div class="stat-value" id="completed">0</div>
+                            <div class="stat-label">Completati</div>
+                        </div>
+                        <div class="stat-item violation-count">
+                            <div class="stat-value" id="violationCount">0</div>
+                            <div class="stat-label">Violazioni</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sessioni attive -->
+                <div class="dashboard-card sessions">
+                    <div class="card-header">
+                        <div class="card-icon">👥</div>
+                        <h2>Sessioni Attive</h2>
+                    </div>
+                    <div id="activeSessionsList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p>Caricamento sessioni...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Violazioni recenti -->
+                <div class="dashboard-card violations">
+                    <div class="card-header">
+                        <div class="card-icon">🚨</div>
+                        <h2>Violazioni Recenti</h2>
+                    </div>
+                    <div id="violationsList">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p>Caricamento violazioni...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Log completo -->
+                <div class="dashboard-card log-card">
+                    <div class="card-header">
+                        <div class="card-icon">📋</div>
+                        <h2>Log di Sistema</h2>
+                    </div>
+                    <div class="log-content" id="systemLog">
+                        <div class="log-line">
+                            <span class="log-time">[10:30:15]</span>
+                            <span class="log-message">Sistema dashboard avviato</span>
+                        </div>
+                        <div class="log-line">
+                            <span class="log-time">[10:30:20]</span>
+                            <span class="log-success">✓ Login insegnante effettuato</span>
+                        </div>
+                        <div class="log-line">
+                            <span class="log-time">[10:31:05]</span>
+                            <span class="log-message">Caricamento dati statistiche...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="control-btn refresh-btn" onclick="refreshDashboard()">
+                            🔄 Aggiorna Dashboard
+                        </button>
+                        <button class="control-btn export-btn" onclick="exportLogs()">
+                            💾 Esporta Log (CSV)
+                        </button>
+                        <button class="control-btn clear-btn" onclick="clearLogs()">
+                            🗑️ Pulisci Log
+                        </button>
+                        <button class="control-btn simulate-btn" onclick="simulateActivity()">
+                            🎭 Simula Attività
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer info -->
+            <div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 14px;">
+                <p>ExamLock System v2.2 • Dashboard Insegnante • Modalità: <span id="modeIndicator">Testing</span></p>
+                <p>Per assistenza: controlla la console del browser (F12) per i log dettagliati</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PRINCIPALE -->
+    <script>
+    // ===========================================================================
+    // SISTEMA DI LOGIN E DASHBOARD
+    // ===========================================================================
+    
+    // Configurazione
+    const CONFIG = {
+        TEACHER_PASSWORD: 'insegnante123',  // CAMBIA QUI LA PASSWORD SE VUOI
+        AUTO_LOGOUT_MINUTES: 120, // 2 ore
+        REFRESH_INTERVAL: 30000, // 30 secondi
+        MAX_LOG_ENTRIES: 100
+    };
+    
+    // Stato applicazione
+    let appState = {
+        isAuthenticated: false,
+        loginTime: null,
+        activityLog: [],
+        mockData: {
+            students: [
+                { id: 1, name: 'Mario Rossi', class: '3A', startTime: '10:30', violations: 0, status: 'active', score: null },
+                { id: 2, name: 'Luigi Verdi', class: '3B', startTime: '10:35', violations: 2, status: 'active', score: null },
+                { id: 3, name: 'Giulia Bianchi', class: '3A', startTime: '10:40', violations: 1, status: 'completed', score: '18/20' },
+                { id: 4, name: 'Marco Neri', class: '3C', startTime: '10:45', violations: 0, status: 'active', score: null },
+                { id: 5, name: 'Anna Gialli', class: '3B', startTime: '10:50', violations: 0, status: 'completed', score: '16/20' }
+            ],
+            violations: [
+                { id: 1, studentId: 2, studentName: 'Luigi Verdi', time: '10:36', type: 'Cambio tab/pagina', severity: 'media' },
+                { id: 2, studentId: 3, studentName: 'Giulia Bianchi', time: '10:42', type: 'Click destro bloccato', severity: 'bassa' },
+                { id: 3, studentId: 2, studentName: 'Luigi Verdi', time: '10:38', type: 'Uscita fullscreen', severity: 'alta' }
+            ]
+        }
+    };
+    
+    // ==================== FUNZIONI DI LOGIN ====================
+    
+    function initLoginSystem() {
+        console.log('🔐 Inizializzazione sistema login...');
+        
+        // Controlla se siamo già autenticati
+        const savedAuth = localStorage.getItem('examlock_teacher_auth');
+        if (savedAuth) {
+            const authData = JSON.parse(savedAuth);
+            const loginTime = new Date(authData.loginTime);
+            const now = new Date();
+            const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+            
+            if (hoursSinceLogin < 2) { // Sessione valida per 2 ore
+                appState.isAuthenticated = true;
+                appState.loginTime = authData.loginTime;
+                showDashboard();
+                return;
+            } else {
+                localStorage.removeItem('examlock_teacher_auth');
+                console.log('🕒 Sessione scaduta');
+            }
+        }
+        
+        // Mostra schermata login
+        showLoginScreen();
+    }
+    
+    function showLoginScreen() {
+        document.getElementById('loginScreen').style.display = 'block';
+        document.getElementById('dashboardContent').style.display = 'none';
+        document.getElementById('passwordInput').focus();
+        
+        // Configura evento login
+        document.getElementById('loginBtn').onclick = handleLogin;
+        document.getElementById('passwordInput').onkeypress = function(e) {
+            if (e.key === 'Enter') handleLogin();
+        };
+    }
+    
+    function handleLogin() {
+        const passwordInput = document.getElementById('passwordInput');
+        const password = passwordInput.value.trim();
+        const errorDiv = document.getElementById('loginError');
+        
+        // Reset error
+        errorDiv.style.display = 'none';
+        
+        if (!password) {
+            errorDiv.textContent = '❌ Inserisci una password';
+            errorDiv.style.display = 'block';
+            passwordInput.focus();
+            return;
+        }
+        
+        console.log('🔐 Tentativo login con password:', password);
+        console.log('🔐 Password corretta:', CONFIG.TEACHER_PASSWORD);
+        
+        if (password === CONFIG.TEACHER_PASSWORD) {
+            // ✅ Login riuscito
+            console.log('✅ Login riuscito!');
+            
+            // Salva stato autenticazione
+            appState.isAuthenticated = true;
+            appState.loginTime = new Date().toISOString();
+            
+            localStorage.setItem('examlock_teacher_auth', JSON.stringify({
+                loginTime: appState.loginTime,
+                timestamp: Date.now()
+            }));
+            
+            // Log evento
+            addLogEntry('Login insegnante effettuato', 'success');
+            
+            // Mostra dashboard
+            showDashboard();
+            
+        } else {
+            // ❌ Password errata
+            console.log('❌ Password errata');
+            errorDiv.textContent = '❌ Password errata. Riprova.';
+            errorDiv.style.display = 'block';
+            passwordInput.value = '';
+            passwordInput.focus();
+            
+            // Log tentativo fallito
+            addLogEntry(`Tentativo login fallito (password: ${password.substring(0, 3)}...)`, 'violation');
+        }
+    }
+    
+    function showDashboard() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'block';
+        
+        // Aggiorna timestamp
+        updateLastUpdateTime();
+        
+        // Carica dati iniziali
+        refreshDashboard();
+        
+        // Avvia auto-refresh
+        startAutoRefresh();
+        
+        // Avvia controllo sessione
+        startSessionMonitor();
+        
+        console.log('✅ Dashboard mostrata');
+    }
+    
+    function teacherLogout() {
+        if (confirm('Sei sicuro di voler uscire dalla dashboard insegnante?')) {
+            // Log evento
+            addLogEntry('Logout insegnante effettuato', 'info');
+            
+            // Pulisci stato
+            appState.isAuthenticated = false;
+            localStorage.removeItem('examlock_teacher_auth');
+            
+            // Mostra login
+            showLoginScreen();
+        }
+    }
+    
+    // ==================== FUNZIONI DASHBOARD ====================
+    
+    function refreshDashboard() {
+        console.log('🔄 Aggiornamento dashboard...');
+        
+        // Aggiorna statistiche
+        updateStatistics();
+        
+        // Aggiorna sessioni attive
+        updateActiveSessions();
+        
+        // Aggiorna violazioni
+        updateViolations();
+        
+        // Aggiorna log
+        updateSystemLog();
+        
+        // Aggiorna timestamp
+        updateLastUpdateTime();
+        
+        addLogEntry('Dashboard aggiornata manualmente', 'info');
+    }
+    
+    function updateStatistics() {
+        const students = appState.mockData.students;
+        const active = students.filter(s => s.status === 'active').length;
+        const completed = students.filter(s => s.status === 'completed').length;
+        const totalViolations = appState.mockData.violations.length;
+        
+        document.getElementById('totalStudents').textContent = students.length;
+        document.getElementById('activeNow').textContent = active;
+        document.getElementById('completed').textContent = completed;
+        document.getElementById('violationCount').textContent = totalViolations;
+    }
+    
+    function updateActiveSessions() {
+        const container = document.getElementById('activeSessionsList');
+        const activeStudents = appState.mockData.students.filter(s => s.status === 'active');
+        
+        if (activeStudents.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">😴</div>
+                    <p>Nessuna sessione attiva al momento</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        activeStudents.forEach(student => {
+            const violationBadge = student.violations > 0 
+                ? `<span style="background: #ff4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 10px;">${student.violations} ⚠️</span>`
+                : '';
+            
+            html += `
+                <div class="session-item">
+                    <div class="session-info">
+                        <div>
+                            <span class="student-name">${student.name}</span>
+                            <span class="student-class">${student.class}</span>
+                            ${violationBadge}
+                        </div>
+                        <div class="session-time">Iniziato: ${student.startTime}</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                        Stato: <strong>${student.status === 'active' ? '🟢 Attivo' : '✅ Completato'}</strong>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function updateViolations() {
+        const container = document.getElementById('violationsList');
+        const violations = appState.mockData.violations;
+        
+        if (violations.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: #666;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">🎉</div>
+                    <p>Nessuna violazione registrata</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        violations.forEach(violation => {
+            const severityColor = {
+                'alta': '#ff4444',
+                'media': '#ff9800',
+                'bassa': '#ffc107'
+            }[violation.severity] || '#666';
+            
+            html += `
+                <div class="violation-item">
+                    <div class="violation-info">
+                        <div>
+                            <span class="student-name">${violation.studentName}</span>
+                            <span class="violation-type" style="color: ${severityColor};">
+                                ⚠️ ${violation.type}
+                            </span>
+                        </div>
+                        <div class="violation-time">${violation.time}</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #666;">
+                        Gravità: <span style="color: ${severityColor}; font-weight: bold;">${violation.severity.toUpperCase()}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function updateSystemLog() {
+        const container = document.getElementById('systemLog');
+        const logs = appState.activityLog.slice(-10).reverse(); // Ultimi 10, più recenti prima
+        
+        let html = '';
+        logs.forEach(log => {
+            const time = new Date(log.timestamp).toLocaleTimeString('it-IT', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit' 
+            });
+            
+            const typeClass = log.type === 'success' ? 'log-success' : 
+                             log.type === 'violation' ? 'log-violation' : 'log-message';
+            
+            html += `
+                <div class="log-line">
+                    <span class="log-time">[${time}]</span>
+                    <span class="${typeClass}">${log.message}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        container.scrollTop = 0; // Torna in cima
+    }
+    
+    function addLogEntry(message, type = 'info') {
+        const logEntry = {
+            message: message,
+            type: type,
+            timestamp: new Date().toISOString()
+        };
+        
+        appState.activityLog.push(logEntry);
+        
+        // Mantieni massimo N log
+        if (appState.activityLog.length > CONFIG.MAX_LOG_ENTRIES) {
+            appState.activityLog.shift();
+        }
+        
+        // Aggiorna display se siamo nella dashboard
+        if (appState.isAuthenticated) {
+            updateSystemLog();
+        }
+    }
+    
+    function updateLastUpdateTime() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('it-IT', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit' 
+        });
+        document.getElementById('lastUpdate').textContent = timeStr;
+    }
+    
+    // ==================== FUNZIONI UTILITY ====================
+    
+    function startAutoRefresh() {
+        // Auto-refresh ogni 30 secondi
+        setInterval(() => {
+            if (appState.isAuthenticated) {
+                updateLastUpdateTime();
+                // Aggiorna solo alcune parti per performance
+                updateStatistics();
+                updateActiveSessions();
+            }
+        }, CONFIG.REFRESH_INTERVAL);
+    }
+    
+    function startSessionMonitor() {
+        // Controlla sessione ogni minuto
+        setInterval(() => {
+            if (!appState.isAuthenticated) return;
+            
+            const loginTime = new Date(appState.loginTime);
+            const now = new Date();
+            const minutesSinceLogin = (now - loginTime) / (1000 * 60);
+            
+            if (minutesSinceLogin > CONFIG.AUTO_LOGOUT_MINUTES) {
+                alert('🕒 Sessione scaduta dopo 2 ore. Rieffettua il login.');
+                teacherLogout();
+            }
+        }, 60000); // Ogni minuto
+    }
+    
+    function exportLogs() {
+        const logs = appState.activityLog;
+        if (logs.length === 0) {
+            alert('Nessun log da esportare');
+            return;
+        }
+        
+        let csv = 'Timestamp,Tipo,Messaggio\n';
+        logs.forEach(log => {
+            const time = new Date(log.timestamp).toLocaleString('it-IT');
+            csv += `"${time}","${log.type}","${log.message.replace(/"/g, '""')}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `examlock_logs_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        addLogEntry('Log esportati in formato CSV', 'success');
+    }
+    
+    function clearLogs() {
+        if (confirm('Vuoi cancellare tutti i log? Questa operazione non può essere annullata.')) {
+            appState.activityLog = [];
+            updateSystemLog();
+            addLogEntry('Log puliti manualmente', 'info');
+        }
+    }
+    
+    function simulateActivity() {
+        // Simula una nuova violazione
+        const students = ['Mario Rossi', 'Luigi Verdi', 'Giulia Bianchi', 'Marco Neri'];
+        const violationTypes = [
+            'Tentativo cambio tab',
+            'Click destro bloccato',
+            'Uscita fullscreen rilevata',
+            'Tasto F12 premuto',
+            'Inattività prolungata'
+        ];
+        const severities = ['bassa', 'media', 'alta'];
+        
+        const randomStudent = students[Math.floor(Math.random() * students.length)];
+        const randomType = violationTypes[Math.floor(Math.random() * violationTypes.length)];
+        const randomSeverity = severities[Math.floor(Math.random() * severities.length)];
+        
+        const newViolation = {
+            id: appState.mockData.violations.length + 1,
+            studentId: Math.floor(Math.random() * 5) + 1,
+            studentName: randomStudent,
+            time: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            type: randomType,
+            severity: randomSeverity
+        };
+        
+        appState.mockData.violations.unshift(newViolation); // Aggiungi in cima
+        
+        // Aggiorna violazioni dello studente
+        const student = appState.mockData.students.find(s => s.name === randomStudent);
+        if (student) {
+            student.violations++;
+        }
+        
+        // Aggiorna dashboard
+        refreshDashboard();
+        
+        // Log evento
+        addLogEntry(`Violazione simulata: ${randomStudent} - ${randomType}`, 'violation');
+        
+        alert(`🎭 Attività simulata:\n${randomStudent} - ${randomType}\nGravità: ${randomSeverity}`);
+    }
+    
+    // ==================== INIZIALIZZAZIONE ====================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Dashboard insegnante - Caricamento...');
+        
+        // Aggiungi log iniziale
+        addLogEntry('Sistema dashboard avviato', 'info');
+        
+        // Inizializza sistema login
+        initLoginSystem();
+        
+        // Tasti rapidi per debug
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Shift+D = Debug info
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                console.log('=== DEBUG INFO ===');
+                console.log('Stato autenticazione:', appState.isAuthenticated);
+                console.log('Time login:', appState.loginTime);
+                console.log('Log entries:', appState.activityLog.length);
+                console.log('Mock students:', appState.mockData.students.length);
+                console.log('Mock violations:', appState.mockData.violations.length);
+                console.log('==================');
+            }
+            
+            // Ctrl+Shift+L = Login rapido (debug)
+            if (e.ctrlKey && e.shiftKey && e.key === 'L' && !appState.isAuthenticated) {
+                e.preventDefault();
+                document.getElementById('passwordInput').value = CONFIG.TEACHER_PASSWORD;
+                handleLogin();
+            }
+        });
+    });
+    
+    // Esponi funzioni globali
+    window.refreshDashboard = refreshDashboard;
+    window.teacherLogout = teacherLogout;
+    window.exportLogs = exportLogs;
+    window.clearLogs = clearLogs;
+    window.simulateActivity = simulateActivity;
+    </script>
+</body>
+</html>

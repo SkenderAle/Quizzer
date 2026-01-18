@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🛡️ Quiz - Ambiente Protetto</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Stili specifici per ambiente blindato */
+        .locked-environment {
+            background: #0a0a0a;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(66, 133, 244, 0.2);
+            border-top: 5px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-header {
+            background: #1a1a1a;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #4285f4;
+            font-size: 14px;
+        }
+        
+        #timer {
+            background: rgba(66, 133, 244, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        #violationCounter {
+            background: rgba(255, 68, 68, 0.15);
+            padding: 6px 12px;
+            border-radius: 15px;
+            float: right;
+        }
+        
+        .quiz-container {
+            height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .quiz-frame-container {
+            flex-grow: 1;
+            position: relative;
+            background: white;
+        }
+        
+        #googleFormFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .controls {
+            padding: 15px;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            border-top: 2px solid #333;
+        }
+        
+        .btn-emergency, .btn-submit {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+        }
+        
+        .btn-emergency {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn-submit {
+            background: #666;
+            color: white;
+        }
+        
+        .btn-submit.enabled {
+            background: #34a853;
+        }
+        
+        .warning-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .warning-popup {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            animation: popIn 0.3s ease;
+        }
+        
+        .warning-popup h2 {
+            color: #ff4444;
+            margin-bottom: 15px;
+        }
+        
+        .warning-popup button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease;
+        }
+        
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @media (max-width: 768px) {
+            .quiz-header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+                font-size: 12px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body class="locked-environment">
+    <!-- Controllo sicurezza -->
+    <script>
+        (function() {
+            // Impedisci di essere caricato in un iframe
+            if (window.top !== window.self) {
+                window.top.location.href = 'index.html';
+            }
+            
+            // Controlla dati studente
+            const studentData = JSON.parse(localStorage.getItem('examlock_student') || '{}');
+            
+            if (!studentData.quizUrl) {
+                alert('❌ Accesso non autorizzato. Torna alla pagina di accesso.');
+                setTimeout(() => window.location.href = 'index.html', 1000);
+            }
+        })();
+    </script>
+    
+    <!-- Schermata di caricamento -->
+    <div id="loadingScreen">
+        <div class="loader"></div>
+        <h3>🛡️ Inizializzazione ambiente protetto</h3>
+        <p id="loadingText">Verifica in corso...</p>
+    </div>
+    
+    <!-- Interfaccia principale (nascosta inizialmente) -->
+    <div id="mainInterface" style="display: none;">
+        <header class="quiz-header">
+            <div class="header-left">
+                <span id="studentInfo">Studente: ---</span>
+            </div>
+            <div class="header-center">
+                <span id="timer">30:00</span>
+            </div>
+            <div class="header-right">
+                <span id="violationCounter">Violazioni: 0</span>
+            </div>
+        </header>
+        
+        <main class="quiz-container">
+            <div class="quiz-frame-container">
+                <iframe 
+                    id="googleFormFrame"
+                    src=""
+                    frameborder="0"
+                    allow="fullscreen"
+                    title="Google Form Quiz"
+                ></iframe>
+            </div>
+            
+            <div class="controls">
+                <button id="emergencyBtn" class="btn-emergency">
+                    🚨 SEGNALA PROBLEMA
+                </button>
+                <button id="submitBtn" class="btn-submit" disabled>
+                    ⏳ ATTENDERE 5 MINUTI
+                </button>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Overlay per avvisi -->
+    <div id="warningOverlay" class="warning-overlay">
+        <div class="warning-popup" id="warningContent"></div>
+    </div>
+    
+    <!-- Script principali -->
+    <script src="desktop-lock.js"></script>
+    <script src="mobile-detection.js"></script>
+    
+    <script>
+        // CONTROLLORE PRINCIPALE
+        class QuizController {
+            constructor() {
+                this.studentData = null;
+                this.sessionId = null;
+                this.timerInterval = null;
+                this.timeLeft = 30 * 60; // 30 minuti
+                this.minimumTimeElapsed = false;
+                this.violationCount = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadStudentData();
+                this.setupQuiz();
+                this.startTimer();
+                this.setupEventListeners();
+                this.showInterface();
+            }
+            
+            loadStudentData() {
+                try {
+                    this.studentData = JSON.parse(localStorage.getItem('examlock_student'));
+                    this.sessionId = localStorage.getItem('examlock_session_id');
+                    
+                    if (!this.studentData) {
+                        throw new Error('Dati studente non trovati');
+                    }
+                    
+                    document.getElementById('studentInfo').textContent = 
+                        `${this.studentData.name} ${this.studentData.surname} - ${this.studentData.class}`;
+                        
+                } catch (error) {
+                    this.showError('Dati non validi. Torna alla pagina di accesso.');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                }
+            }
+            
+            setupQuiz() {
+                const iframe = document.getElementById('googleFormFrame');
+                
+                if (!this.studentData?.quizUrl) {
+                    this.showError('Link del quiz non configurato');
+                    return;
+                }
+                
+                // Prepara URL Google Form
+                let formUrl = this.studentData.quizUrl.trim();
+                
+                // Assicura che abbia i parametri embedded
+                if (!formUrl.includes('?')) {
+                    formUrl += '?';
+                } else {
+                    formUrl += '&';
+                }
+                
+                formUrl += 'embedded=true&usp=pp_url&hl=it';
+                iframe.src = formUrl;
+                
+                iframe.onload = () => {
+                    console.log('✅ Google Form caricato');
+                    document.getElementById('loadingText').textContent = 'Quiz pronto!';
+                };
+                
+                iframe.onerror = () => {
+                    this.showError('Errore nel caricamento del quiz');
+                };
+            }
+            
+            startTimer() {
+                const timerElement = document.getElementById('timer');
+                
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    
+                    const minutes = Math.floor(this.timeLeft / 60);
+                    const seconds = this.timeLeft % 60;
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    
+                    // Abilita invio dopo 5 minuti
+                    if (this.timeLeft <= 25 * 60 && !this.minimumTimeElapsed) {
+                        this.enableSubmitButton();
+                    }
+                    
+                    // Avviso ultimi 5 minuti
+                    if (this.timeLeft === 5 * 60) {
+                        this.showWarning('⚠️ 5 minuti rimanenti!');
+                        timerElement.style.color = '#ff9800';
+                    }
+                    
+                    // Ultimo minuto
+                    if (this.timeLeft <= 60) {
+                        timerElement.style.color = '#ff4444';
+                        timerElement.classList.add('blink');
+                    }
+                    
+                    // Tempo scaduto
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timerInterval);
+                        this.timeExpired();
+                    }
+                    
+                }, 1000);
+            }
+            
+            enableSubmitButton() {
+                this.minimumTimeElapsed = true;
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📤 INVIA QUIZ';
+                submitBtn.classList.add('enabled');
+                this.showToast('✅ Ora puoi inviare il quiz', 'success');
+            }
+            
+            timeExpired() {
+                this.showWarning('⏰ TEMPO SCADUTO!');
+                setTimeout(() => {
+                    this.cleanup();
+                    window.close();
+                }, 3000);
+            }
+            
+            setupEventListeners() {
+                // Pulsante invio
+                document.getElementById('submitBtn').addEventListener('click', () => {
+                    if (this.minimumTimeElapsed) {
+                        if (confirm('Sei sicuro di voler inviare il quiz?\nNon potrai più modificare le risposte.')) {
+                            this.submitQuiz();
+                        }
+                    }
+                });
+                
+                // Pulsante emergenza
+                document.getElementById('emergencyBtn').addEventListener('click', () => {
+                    const problem = prompt('Descrivi il problema tecnico:');
+                    if (problem && problem.length > 5) {
+                        this.logEmergency(problem);
+                        alert('Problema registrato. Se persiste, contatta l\'insegnante.');
+                    }
+                });
+                
+                // Rileva violazioni dai sistemi di protezione
+                window.addEventListener('violation-detected', (e) => {
+                    this.handleViolation(e.detail);
+                });
+            }
+            
+            handleViolation(violation) {
+                this.violationCount++;
+                document.getElementById('violationCounter').textContent = `Violazioni: ${this.violationCount}`;
+                document.getElementById('violationCounter').classList.add('shake');
+                
+                // Aggiorna nella lista globale studenti
+                this.updateStudentViolation(violation);
+                
+                // Mostra avviso per violazioni multiple
+                if (this.violationCount >= 3) {
+                    this.showWarning(`ATTENZIONE: ${this.violationCount} violazioni rilevate!`);
+                }
+                
+                setTimeout(() => {
+                    document.getElementById('violationCounter').classList.remove('shake');
+                }, 500);
+            }
+            
+            updateStudentViolation(violation) {
+                try {
+                    let allStudents = JSON.parse(localStorage.getItem('examlock_all_students') || '[]');
+                    
+                    allStudents = allStudents.map(student => {
+                        if (student.id === this.sessionId) {
+                            student.violations.push({
+                                type: violation.type,
+                                time: new Date().toISOString(),
+                                details: violation.details
+                            });
+                            student.lastUpdate = new Date().toISOString();
+                        }
+                        return student;
+                    });
+                    
+                    localStorage.setItem('examlock_all_students', JSON.stringify(allStudents));
+                } catch (e) {
+                    console.error('Errore aggiornamento violazioni:', e);
+                }
+            }
+            
+            submitQuiz() {
+                const iframe = document.getElementById('googleFormFrame');
+                
+                try {
+                    // Prova a inviare via JavaScript
+                    iframe.contentWindow.postMessage('submit_form', '*');
+                    
+                    this.showToast('✅ Quiz inviato con successo!', 'success');
+                    
+                    // Segna come completato
+                    this.markAsCompleted();
+                    
+                    setTimeout(() => {
+                        this.cleanup();
+                        window.close();
+                    }, 2000);
+                    
+                } catch (error) {
+                    // Fallback
+                    this.showWarning('Completa l\'invio direttamente nel Google Form sopra.');
+                }
+            }
+            
+            markAsCompleted() {
+                try {
+                    let allStudents = JSON.parse(localStorage.getItem('examlock_all_students') || '[]');
+                    
+                    allStudents = allStudents.map(student => {
+                        if (student.id === this.sessionId) {
+                            student.status = 'completed';
+                            student.endTime = new Date().toISOString();
+                            student.lastUpdate = new Date().toISOString();
+                        }
+                        return student;
+                    });
+                    
+                    localStorage.setItem('examlock_all_students', JSON.stringify(allStudents));
+                } catch (e) {
+                    console.error('Errore marcatura completato:', e);
+                }
+            }
+            
+            logEmergency(problem) {
+                try {
+                    let allStudents = JSON.parse(localStorage.getItem('examlock_all_students') || '[]');
+                    
+                    allStudents = allStudents.map(student => {
+                        if (student.id === this.sessionId) {
+                            if (!student.emergencies) student.emergencies = [];
+                            student.emergencies.push({
+                                problem: problem,
+                                time: new Date().toISOString()
+                            });
+                        }
+                        return student;
+                    });
+                    
+                    localStorage.setItem('examlock_all_students', JSON.stringify(allStudents));
+                } catch (e) {
+                    console.error('Errore log emergenza:', e);
+                }
+            }
+            
+            showInterface() {
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                    document.getElementById('mainInterface').style.display = 'block';
+                    
+                    // Richiedi fullscreen
+                    this.requestFullscreen();
+                }, 2000);
+            }
+            
+            requestFullscreen() {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(e => {
+                        console.log('Fullscreen non disponibile:', e.message);
+                    });
+                }
+            }
+            
+            showError(message) {
+                alert(`❌ ${message}`);
+            }
+            
+            showWarning(message) {
+                const overlay = document.getElementById('warningOverlay');
+                const content = document.getElementById('warningContent');
+                
+                content.innerHTML = `
+                    <h2>⚠️ ATTENZIONE</h2>
+                    <p>${message}</p>
+                    <button onclick="document.getElementById('warningOverlay').style.display='none'">
+                        OK
+                    </button>
+                `;
+                
+                overlay.style.display = 'flex';
+                
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 5000);
+            }
+            
+            showToast(message, type) {
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: ${type === 'success' ? '#34a853' : '#4285f4'};
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 10px;
+                    z-index: 9999;
+                    font-weight: bold;
+                    animation: fadeIn 0.3s ease;
+                `;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 3000);
+            }
+            
+            cleanup() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                // Pulisci dati locali (ma mantieni nel registro globale)
+                localStorage.removeItem('examlock_student');
+                localStorage.removeItem('examlock_session_id');
+            }
+        }
+        
+        // Avvia il controller
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.quizController = new QuizController();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

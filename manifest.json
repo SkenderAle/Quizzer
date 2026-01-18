@@ -1,0 +1,30 @@
+{
+  "name": "ExamLock Quiz System",
+  "short_name": "ExamLock",
+  "description": "Sistema protetto per quiz e verifiche",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a2980",
+  "theme_color": "#4285f4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Nuovo Quiz",
+      "url": "./index.html",
+      "description": "Inizia un nuovo quiz protetto"
+    }
+  ]
+}
