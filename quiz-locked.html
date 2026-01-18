@@ -3,410 +3,765 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🛡️ Controllo Quiz - Sistema Protetto</title>
+    <title>🛡️ QUIZ PROTETTO - Non uscire!</title>
     <style>
+        /* RESET E SCHERMO INTERNO */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #0a0a0a;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0c2461, #1e3799);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
         }
-        .container {
-            max-width: 800px;
-            background: rgba(255, 255, 255, 0.1);
+        
+        /* IFRAME DEL GOOGLE FORM - OCCUPA TUTTO */
+        #quizFrame {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: white;
+        }
+        
+        /* OVERLAY DI CONTROLLO (sopra l'iframe, in alto a destra) */
+        #controlOverlay {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(20, 20, 30, 0.95);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            z-index: 10000;
+            min-width: 280px;
+            border: 2px solid #4285f4;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(10px);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        h1 { margin-bottom: 20px; font-size: 2.5rem; }
-        .status-box {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            border-radius: 15px;
-            margin: 25px 0;
-        }
-        #studentInfo {
-            font-size: 1.4rem;
-            margin-bottom: 15px;
-            color: #4cd137;
-        }
-        #timer {
-            font-size: 3rem;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            margin: 20px 0;
-            color: #fbc531;
-        }
-        #violationCounter {
-            font-size: 1.2rem;
-            background: #e84118;
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 50px;
-            margin-top: 15px;
-        }
-        .warning {
-            color: #ff9f1a;
-            font-weight: bold;
-            margin: 15px 0;
-        }
-        .violation-alert {
-            background: #c23616;
+        
+        /* AVVISO DI VIOLAZIONE (copre tutto lo schermo) */
+        #violationAlert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #c23616, #e84118);
             color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            animation: pulse 1.5s infinite;
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            flex-direction: column;
+            font-size: 24px;
+            padding: 20px;
+            animation: alertPulse 2s infinite;
         }
-        @keyframes pulse {
+        
+        /* BANNER DI AVVISO PERMANENTE (in alto) */
+        #topWarning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #1a2980, #26d0ce);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            z-index: 10001;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        /* STILI PER GLI ELEMENTI DI CONTROLLO */
+        .violation-count {
+            background: #ff4444;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            display: inline-block;
+            margin-left: 10px;
+            animation: countPulse 1s infinite;
+        }
+        
+        .timer {
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            color: #4cd137;
+            margin: 15px 0;
+            text-shadow: 0 0 10px rgba(76, 209, 55, 0.5);
+        }
+        
+        .student-info {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .warning-list {
+            font-size: 13px;
+            color: #ff9f1a;
+            margin-top: 15px;
+            text-align: left;
+            line-height: 1.5;
+        }
+        
+        .warning-list div {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .warning-list div::before {
+            content: "⚠️";
+            margin-right: 8px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #ff4444;
+        }
+        
+        .btn-danger:hover {
+            background: #c23616;
+        }
+        
+        /* ANIMAZIONI */
+        @keyframes alertPulse {
+            0% { background: linear-gradient(135deg, #c23616, #e84118); }
+            50% { background: linear-gradient(135deg, #e84118, #ff6b6b); }
+            100% { background: linear-gradient(135deg, #c23616, #e84118); }
+        }
+        
+        @keyframes countPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes timerPulse {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
-        .btn {
-            display: inline-block;
-            background: #3742fa;
-            color: white;
-            padding: 15px 35px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin: 15px 10px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn:hover {
-            background: #5352ed;
-            transform: translateY(-3px);
-            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.3);
-        }
-        .btn-danger {
-            background: #e84118;
-        }
-        .btn-danger:hover {
-            background: #c23616;
-        }
-        .btn-success {
-            background: #44bd32;
-        }
-        .btn-success:hover {
-            background: #389122;
-        }
-        .logs {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 25px;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            #controlOverlay {
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                top: 5px;
+            }
+            
+            .timer {
+                font-size: 24px;
+            }
+            
+            #violationAlert {
+                font-size: 18px;
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛡️ CONTROLLO QUIZ ATTIVO</h1>
-        <p>Questa finestra monitora la tua sessione. <strong>Non chiuderla!</strong></p>
-
-        <div class="status-box">
-            <div id="studentInfo">Caricamento dati studente...</div>
-            <div id="timer">30:00</div>
-            <div class="warning">⚠️ ATTENZIONE: Tutte le attività sono monitorate</div>
-            <div id="violationCounter">Violazioni: 0</div>
+    <!-- BANNER SUPERIORE DI AVVISO -->
+    <div id="topWarning">
+        🛡️ SISTEMA DI PROTEZIONE ATTIVO - NON USCIRE DA QUESTA PAGINA
+    </div>
+    
+    <!-- IFRAME CON IL GOOGLE FORM -->
+    <iframe id="quizFrame" src="" title="Google Form Quiz"></iframe>
+    
+    <!-- OVERLAY DI CONTROLLO (sempre visibile) -->
+    <div id="controlOverlay">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">🛡️ CONTROLLO ATTIVO</h3>
+            <span id="violationCount" class="violation-count">0</span>
         </div>
-
-        <div id="violationAlert" class="violation-alert" style="display: none;">
-            <h3>🚨 VIOLAZIONE RILEVATA!</h3>
-            <p id="violationText">Hai cambiato finestra/tab.</p>
+        
+        <div class="student-info" id="studentInfo">
+            Studente: Caricamento...
         </div>
-
-        <div>
-            <button id="btnOpenQuiz" class="btn btn-success">▶️ APRI QUIZ (Google Form)</button>
-            <button id="btnEndQuiz" class="btn btn-danger">⏹️ TERMINA QUIZ</button>
+        
+        <div class="timer" id="timer">30:00</div>
+        
+        <div class="warning-list">
+            <div>NON CAMBIARE SCHEDA/FINESTRA</div>
+            <div>NON PREMERE F12 O CTRL+SHIFT+I</div>
+            <div>NON USARE CLICK DESTRO O COPY/PASTE</div>
+            <div>3 VIOLAZIONI = QUIZ INVALIDATO</div>
         </div>
-
-        <div class="logs">
-            <h3>📜 Log di Controllo:</h3>
-            <div id="logEntries">
-                <div class="log-entry">Sistema di controllo avviato...</div>
-            </div>
+        
+        <div style="margin-top: 15px; text-align: center;">
+            <button id="btnFullscreen" class="btn">🖥️ ATTIVA SCHERMO INTERO</button>
+            <button id="btnEmergency" class="btn btn-danger">🚨 SEGNALA PROBLEMA</button>
         </div>
+    </div>
+    
+    <!-- AVVISO DI VIOLAZIONE (appare quando esci) -->
+    <div id="violationAlert">
+        <div style="font-size: 72px; margin-bottom: 20px;">🚨</div>
+        <h1 style="font-size: 42px; margin-bottom: 20px;">VIOLAZIONE RILEVATA!</h1>
+        <p id="violationText" style="font-size: 28px; margin: 15px 0;">Hai cambiato scheda o finestra</p>
+        <p style="margin: 20px 0; font-size: 24px;">
+            Questa azione è stata registrata<br>
+            <span style="font-size: 48px; font-weight: bold;">Violazione n. <span id="currentViolation">1</span></span>
+        </p>
+        <button class="btn" onclick="hideViolationAlert()" style="padding: 15px 30px; font-size: 20px; margin-top: 20px;">
+            HO CAPITO - TORNO AL QUIZ
+        </button>
+        <p style="margin-top: 40px; font-size: 20px; color: #ffcc00;">
+            ⚠️ ATTENZIONE: 3 violazioni = QUIZ INVALIDATO AUTOMATICAMENTE
+        </p>
     </div>
 
     <script>
-        // ==================== SISTEMA DI CONTROLLO PRINCIPALE ====================
+        // ==================== SISTEMA DI PROTEZIONE ====================
         class QuizProtectionSystem {
             constructor() {
-                this.studentData = null;
-                this.quizWindow = null;
-                this.violations = [];
-                this.violationCount = 0;
-                this.timeLeft = 30 * 60; // 30 minuti in secondi
+                this.violations = 0;
+                this.timeLeft = 30 * 60; // 30 minuti
                 this.timerInterval = null;
-                this.checkInterval = null;
-                this.isActive = false;
+                this.studentData = null;
+                this.quizUrl = null;
+                this.isBlocked = false;
+                this.violationHistory = [];
                 
                 this.init();
             }
-
+            
             init() {
-                console.log('🛡️ Sistema di protezione inizializzato');
+                console.log('🛡️ Sistema protezione avviato');
+                
+                // 1. Carica dati studente
                 this.loadStudentData();
+                
+                // 2. Carica Google Form
+                this.loadGoogleForm();
+                
+                // 3. Avvia timer
                 this.startTimer();
-                this.startProtectionMonitoring();
-                this.setupEventListeners();
-                this.addLog('Sistema di controllo attivato');
+                
+                // 4. Attiva protezioni
+                this.activateProtections();
+                
+                // 5. Setup eventi UI
+                this.setupUIEvents();
+                
+                // 6. Log avvio
+                this.logEvent('SYSTEM_START', 'Sistema protezione avviato');
             }
-
+            
             loadStudentData() {
                 try {
                     this.studentData = JSON.parse(localStorage.getItem('examlock_student'));
                     if (this.studentData) {
-                        document.getElementById('studentInfo').innerHTML = 
-                            `<strong>Studente:</strong> ${this.studentData.name} ${this.studentData.surname}<br>
-                             <strong>Classe:</strong> ${this.studentData.class}`;
-                        this.addLog(`Studente ${this.studentData.name} riconosciuto`);
+                        document.getElementById('studentInfo').textContent = 
+                            `Studente: ${this.studentData.name} ${this.studentData.surname} - ${this.studentData.class}`;
+                        this.quizUrl = this.studentData.quizUrl;
+                        console.log('✅ Dati studente caricati:', this.studentData.name);
+                    } else {
+                        this.showFatalError('Dati studente non trovati. Torna alla pagina di accesso.');
                     }
                 } catch (e) {
-                    this.addLog('Errore caricamento dati studente', 'error');
+                    this.showFatalError('Errore nel caricamento dei dati.');
                 }
             }
-
+            
+            loadGoogleForm() {
+                const iframe = document.getElementById('quizFrame');
+                
+                if (!this.quizUrl || !this.quizUrl.includes('http')) {
+                    this.showFatalError('Link del quiz non configurato correttamente.');
+                    return;
+                }
+                
+                // Prepara URL Google Form con parametri embedded
+                let url = this.quizUrl.trim();
+                if (!url.includes('?')) url += '?';
+                else url += '&';
+                url += 'embedded=true&usp=pp_url&hl=it';
+                
+                iframe.src = url;
+                console.log('🔗 Google Form caricato:', url.substring(0, 50) + '...');
+                
+                // Quando il form è caricato
+                iframe.onload = () => {
+                    console.log('✅ Google Form completamente caricato');
+                    this.logEvent('FORM_LOADED', 'Google Form pronto');
+                    
+                    // Forza focus sull'iframe
+                    setTimeout(() => {
+                        iframe.contentWindow.focus();
+                    }, 1000);
+                };
+                
+                iframe.onerror = () => {
+                    this.showError('Errore nel caricamento del Google Form. Controlla il link.');
+                };
+            }
+            
             startTimer() {
                 this.timerInterval = setInterval(() => {
                     this.timeLeft--;
+                    
                     const minutes = Math.floor(this.timeLeft / 60);
                     const seconds = this.timeLeft % 60;
-                    document.getElementById('timer').textContent = 
+                    const timerElement = document.getElementById('timer');
+                    timerElement.textContent = 
                         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                     
-                    if (this.timeLeft <= 300) { // Ultimi 5 minuti
-                        document.getElementById('timer').style.color = '#ff9f1a';
+                    // Cambia colore ultimi 5 minuti
+                    if (this.timeLeft <= 300) {
+                        timerElement.style.color = '#ff9800';
                     }
                     
+                    // Ultimo minuto
+                    if (this.timeLeft <= 60) {
+                        timerElement.style.color = '#ff4444';
+                        timerElement.style.animation = 'timerPulse 1s infinite';
+                    }
+                    
+                    // Tempo scaduto
                     if (this.timeLeft <= 0) {
-                        this.endQuiz('Tempo scaduto');
+                        this.endQuiz('TEMPO SCADUTO');
                     }
                 }, 1000);
             }
-
-            startProtectionMonitoring() {
-                // 1. Rileva cambio tab/finestra
+            
+            activateProtections() {
+                console.log('🔒 Attivazione protezioni anti-copia...');
+                
+                // 1. RILEVA CAMBIO SCHEDA/FINESTRA (FUNZIONA!)
                 document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        this.recordViolation('CHANGE_TAB', 'Lo studente ha cambiato tab/finestra');
+                    if (document.hidden && !this.isBlocked) {
+                        this.recordViolation('TAB_SWITCH', 'Hai cambiato scheda o finestra');
+                        this.playWarningSound();
                     }
                 });
-
-                // 2. Rileva perdita di focus
+                
+                // 2. RILEVA PERDITA FOCUS (clicco su altra finestra)
                 window.addEventListener('blur', () => {
-                    if (document.hasFocus()) {
-                        this.recordViolation('WINDOW_BLUR', 'Finestra persa di focus');
+                    if (!this.isBlocked) {
+                        setTimeout(() => {
+                            if (!document.hasFocus()) {
+                                this.recordViolation('WINDOW_BLUR', 'Hai cliccato su un\'altra applicazione');
+                            }
+                        }, 100);
                     }
                 });
-
-                // 3. Blocca tasti di scelta rapida
+                
+                // 3. BLOCCA TASTI DI SCELTA RAPIDA
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'F12' || 
-                        (e.ctrlKey && e.shiftKey && e.key === 'I') || 
-                        (e.ctrlKey && e.shiftKey && e.key === 'J') ||
-                        (e.ctrlKey && e.key === 'U')) {
+                    // Blocca F1-F12 (tranne F5 per refresh)
+                    if (e.key.startsWith('F') && e.key !== 'F5') {
                         e.preventDefault();
-                        this.recordViolation('DEVTOOLS_ATTEMPT', `Tentativo di aprire DevTools (${e.key})`);
+                        e.stopPropagation();
+                        this.recordViolation('F_KEY_BLOCKED', `Tasto ${e.key} bloccato`);
+                        return false;
                     }
-                });
-
-                // 4. Controlla periodicamente se la finestra del quiz è ancora aperta
-                this.checkInterval = setInterval(() => {
-                    if (this.quizWindow && this.quizWindow.closed) {
-                        this.addLog('Finestra del quiz chiusa dallo studente');
-                        this.recordViolation('QUIZ_WINDOW_CLOSED', 'Lo studente ha chiuso la finestra del quiz');
-                    }
-                }, 2000);
-            }
-
-            setupEventListeners() {
-                // Pulsante per aprire il Google Form in una nuova finestra
-                document.getElementById('btnOpenQuiz').addEventListener('click', () => {
-                    this.openQuizWindow();
-                });
-
-                // Pulsante per terminare il quiz
-                document.getElementById('btnEndQuiz').addEventListener('click', () => {
-                    if (confirm('Terminare il quiz? Verrà registrato come completato.')) {
-                        this.endQuiz('Terminato manualmente');
-                    }
-                });
-
-                // Impedisci chiusura accidentale di questa finestra
-                window.addEventListener('beforeunload', (e) => {
-                    if (this.isActive) {
-                        e.preventDefault();
-                        e.returnValue = 'Chiudendo questa finestra, il quiz verrà invalidato. Sei sicuro?';
-                        return e.returnValue;
-                    }
-                });
-            }
-
-            openQuizWindow() {
-                if (!this.studentData || !this.studentData.quizUrl) {
-                    alert('URL del quiz non configurato. Contatta l\'insegnante.');
-                    return;
-                }
-
-                this.addLog('Apertura finestra quiz...');
-                
-                // Apri il Google Form in una nuova finestra del browser
-                this.quizWindow = window.open(
-                    this.studentData.quizUrl,
-                    'GoogleFormQuiz',
-                    `width=1000,height=700,left=100,top=100,
-                    scrollbars=yes,resizable=yes,toolbar=yes,
-                    menubar=yes,location=yes,status=yes`
-                );
-
-                if (this.quizWindow) {
-                    this.isActive = true;
-                    this.addLog('Quiz avviato in finestra separata');
-                    document.getElementById('btnOpenQuiz').style.display = 'none';
                     
-                    // Forza il focus sulla finestra del quiz
-                    setTimeout(() => {
-                        if (this.quizWindow) {
-                            this.quizWindow.focus();
-                        }
-                    }, 500);
-                } else {
-                    this.addLog('ERRORE: Browser ha bloccato la finestra. Consenti i popup.', 'error');
-                    alert('Il browser ha bloccato la finestra del quiz. Consenti i popup per questo sito e riprova.');
-                }
-            }
-
-            recordViolation(type, message) {
-                this.violationCount++;
-                this.violations.push({
-                    type: type,
-                    message: message,
-                    timestamp: new Date().toISOString(),
-                    timeLeft: this.timeLeft
+                    // Blocca Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+                    if (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.recordViolation('DEVTOOLS_ATTEMPT', `Tentativo DevTools: Ctrl+Shift+${e.key}`);
+                        return false;
+                    }
+                    
+                    // Blocca Ctrl+U (view source)
+                    if (e.ctrlKey && e.key === 'U') {
+                        e.preventDefault();
+                        this.recordViolation('VIEW_SOURCE_ATTEMPT', 'Tentativo di vedere il codice sorgente');
+                        return false;
+                    }
+                    
+                    // Blocca Alt+Tab, Win+Tab (simulazione)
+                    if ((e.altKey && e.key === 'Tab') || (e.metaKey && e.key === 'Tab')) {
+                        e.preventDefault();
+                        this.recordViolation('APP_SWITCH_ATTEMPT', 'Tentativo di cambiare applicazione');
+                        return false;
+                    }
+                    
+                    // Blocca Ctrl+T (nuova scheda), Ctrl+N (nuova finestra)
+                    if (e.ctrlKey && ['t', 'n'].includes(e.key.toLowerCase())) {
+                        e.preventDefault();
+                        this.recordViolation('NEW_WINDOW_ATTEMPT', 'Tentativo di aprire nuova finestra/scheda');
+                        return false;
+                    }
+                }, true); // UseCapture = true per bloccare prima
+                
+                // 4. BLOCCA CLICK DESTRO (menu contestuale)
+                document.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.recordViolation('RIGHT_CLICK_BLOCKED', 'Menu contestuale disabilitato');
+                    return false;
                 });
-
-                // Aggiorna l'interfaccia
-                document.getElementById('violationCounter').textContent = `Violazioni: ${this.violationCount}`;
-                document.getElementById('violationText').textContent = message;
-                document.getElementById('violationAlert').style.display = 'block';
                 
-                this.addLog(`VIOLAZIONE: ${message}`, 'violation');
-
-                // Se troppe violazioni, termina il quiz
-                if (this.violationCount >= 3) {
-                    this.endQuiz(`Troppe violazioni (${this.violationCount})`);
-                }
-
-                // Nascondi l'avviso dopo 5 secondi
-                setTimeout(() => {
-                    document.getElementById('violationAlert').style.display = 'none';
-                }, 5000);
+                // 5. BLOCCA COPY/PASTE
+                document.addEventListener('copy', (e) => {
+                    e.preventDefault();
+                    this.recordViolation('COPY_BLOCKED', 'Copia testo disabilitata');
+                    return false;
+                });
+                
+                document.addEventListener('cut', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                document.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    this.recordViolation('PASTE_BLOCKED', 'Incolla testo disabilitato');
+                    return false;
+                });
+                
+                // 6. BLOCCA DRAG/DROP
+                document.addEventListener('dragstart', (e) => e.preventDefault());
+                document.addEventListener('drop', (e) => e.preventDefault());
+                
+                console.log('✅ Tutte le protezioni attivate');
             }
-
-            endQuiz(reason) {
-                this.addLog(`Quiz terminato: ${reason}`, 'important');
-                alert(`Quiz terminato. Motivo: ${reason}`);
+            
+            setupUIEvents() {
+                // Pulsante schermo intero
+                document.getElementById('btnFullscreen').addEventListener('click', () => {
+                    this.requestFullscreen();
+                });
                 
-                // Chiudi la finestra del quiz se è ancora aperta
-                if (this.quizWindow && !this.quizWindow.closed) {
-                    this.quizWindow.close();
+                // Pulsante emergenza
+                document.getElementById('btnEmergency').addEventListener('click', () => {
+                    this.reportEmergency();
+                });
+                
+                // Click su qualsiasi parte → forza focus
+                document.addEventListener('click', () => {
+                    window.focus();
+                    document.getElementById('quizFrame').contentWindow.focus();
+                });
+            }
+            
+            requestFullscreen() {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen && !document.fullscreenElement) {
+                    elem.requestFullscreen()
+                        .then(() => {
+                            console.log('✅ Schermo intero attivato');
+                            this.logEvent('FULLSCREEN_ACTIVE', 'Utente ha attivato schermo intero');
+                        })
+                        .catch(err => {
+                            console.log('Fullscreen non permesso:', err);
+                            alert('Per attivare lo schermo intero, clicca sulla richiesta del browser.');
+                        });
+                } else if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+            }
+            
+            recordViolation(type, message) {
+                this.violations++;
+                
+                // Aggiorna display
+                document.getElementById('violationCount').textContent = this.violations;
+                document.getElementById('violationText').textContent = message;
+                document.getElementById('currentViolation').textContent = this.violations;
+                
+                // Mostra avviso
+                this.showViolationAlert();
+                
+                // Suono di avviso
+                this.playWarningSound();
+                
+                // Salva nel localStorage e storia
+                this.saveViolation(type, message);
+                
+                // Log in console
+                console.log(`🚨 Violazione ${this.violations}: ${type} - ${message}`);
+                this.logEvent('VIOLATION', `${type}: ${message}`);
+                
+                // Se troppe violazioni, blocca tutto
+                if (this.violations >= 3) {
+                    this.blockQuiz();
                 }
                 
-                // Salva i risultati
-                this.saveResults(reason);
+                if (this.violations >= 5) {
+                    this.endQuiz('TROPPE VIOLAZIONI');
+                }
+            }
+            
+            showViolationAlert() {
+                const alert = document.getElementById('violationAlert');
+                alert.style.display = 'flex';
                 
-                // Pulisci gli intervalli
+                // Forza focus sull'avviso
+                setTimeout(() => {
+                    alert.focus();
+                }, 100);
+                
+                // Auto-nascondi dopo 10 secondi (se meno di 3 violazioni)
+                if (this.violations < 3) {
+                    setTimeout(() => {
+                        this.hideViolationAlert();
+                    }, 10000);
+                }
+            }
+            
+            hideViolationAlert() {
+                if (this.violations < 3) {
+                    document.getElementById('violationAlert').style.display = 'none';
+                }
+            }
+            
+            playWarningSound() {
+                try {
+                    // Crea beep con Web Audio API
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 600;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.8);
+                } catch (e) {
+                    console.log('Audio API non disponibile');
+                }
+            }
+            
+            saveViolation(type, message) {
+                try {
+                    const violationRecord = {
+                        student: this.studentData ? `${this.studentData.name} ${this.studentData.surname}` : 'Sconosciuto',
+                        type: type,
+                        message: message,
+                        timestamp: new Date().toISOString(),
+                        violationNumber: this.violations,
+                        timeLeft: this.timeLeft
+                    };
+                    
+                    this.violationHistory.push(violationRecord);
+                    
+                    // Salva nel localStorage per la dashboard
+                    let allViolations = JSON.parse(localStorage.getItem('examlock_violations') || '[]');
+                    allViolations.push(violationRecord);
+                    localStorage.setItem('examlock_violations', JSON.stringify(allViolations));
+                    
+                    // Salva anche nello storico della sessione
+                    localStorage.setItem('examlock_current_violations', JSON.stringify(this.violationHistory));
+                    
+                } catch (e) {
+                    console.error('Errore salvataggio violazione:', e);
+                }
+            }
+            
+            blockQuiz() {
+                this.isBlocked = true;
+                
+                // Aggiungi blur e overlay
+                document.body.style.filter = 'blur(5px)';
+                document.body.style.pointerEvents = 'none';
+                
+                const blockMsg = document.createElement('div');
+                blockMsg.innerHTML = `
+                    <div style="
+                        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                        background: rgba(0,0,0,0.95); color: white; z-index: 99998;
+                        display: flex; flex-direction: column; justify-content: center;
+                        align-items: center; text-align: center; font-size: 28px;
+                    ">
+                        <h1 style="color: #ff4444; margin-bottom: 30px; font-size: 48px;">🚨 QUIZ BLOCCATO</h1>
+                        <p>Hai superato il limite di 3 violazioni</p>
+                        <p style="margin: 20px 0; font-size: 24px; color: #ff9f1a;">
+                            Violazioni totali: ${this.violations}
+                        </p>
+                        <p>Contatta immediatamente l'insegnante</p>
+                        <button onclick="location.reload()" 
+                                style="margin-top: 40px; padding: 15px 30px; font-size: 20px;
+                                       background: #4285f4; color: white; border: none; border-radius: 10px;
+                                       cursor: pointer;">
+                            TORNA ALLA PAGINA INIZIALE
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(blockMsg);
+                
+                this.logEvent('QUIZ_BLOCKED', `Quiz bloccato per ${this.violations} violazioni`);
+            }
+            
+            endQuiz(reason) {
                 clearInterval(this.timerInterval);
-                clearInterval(this.checkInterval);
                 
-                // Chiudi questa finestra dopo 3 secondi
+                // Salva risultato finale
+                this.saveFinalResult(reason);
+                
+                // Messaggio finale
+                const message = `QUIZ TERMINATO\nMotivo: ${reason}\n\nViolazioni: ${this.violations}`;
+                alert(message);
+                
+                // Chiudi finestra dopo 5 secondi
                 setTimeout(() => {
                     window.close();
-                }, 3000);
+                }, 5000);
             }
-
-            saveResults(reason) {
+            
+            saveFinalResult(reason) {
                 try {
-                    const result = {
+                    const finalResult = {
                         student: this.studentData,
                         violations: this.violations,
-                        violationCount: this.violationCount,
+                        violationHistory: this.violationHistory,
                         endReason: reason,
                         endTime: new Date().toISOString(),
-                        timeSpent: (30 * 60) - this.timeLeft
+                        timeSpent: (30 * 60) - this.timeLeft,
+                        finalScore: 'N/A' // Potresti ottenere il punteggio dal Google Form
                     };
-
-                    // Salva nel localStorage per la dashboard
+                    
                     let allResults = JSON.parse(localStorage.getItem('examlock_results') || '[]');
-                    allResults.push(result);
+                    allResults.push(finalResult);
                     localStorage.setItem('examlock_results', JSON.stringify(allResults));
-
-                    this.addLog('Risultati salvati correttamente');
+                    
+                    console.log('💾 Risultato finale salvato:', finalResult);
+                    
                 } catch (e) {
-                    this.addLog('Errore nel salvataggio dei risultati', 'error');
+                    console.error('Errore salvataggio risultato:', e);
                 }
             }
-
-            addLog(message, type = 'info') {
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
+            
+            reportEmergency() {
+                const problem = prompt('Descrivi il problema tecnico:\n(Es: "Il form non si carica", "Il timer è bloccato")');
                 
-                const timestamp = new Date().toLocaleTimeString('it-IT', { 
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                
-                logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
-                
-                if (type === 'error') {
-                    logEntry.style.color = '#ff6b6b';
-                } else if (type === 'violation') {
-                    logEntry.style.color = '#ff9f1a';
-                } else if (type === 'important') {
-                    logEntry.style.color = '#4cd137';
-                    logEntry.style.fontWeight = 'bold';
+                if (problem && problem.length > 5) {
+                    const emergencyRecord = {
+                        student: this.studentData,
+                        problem: problem,
+                        timestamp: new Date().toISOString(),
+                        violations: this.violations,
+                        timeLeft: this.timeLeft
+                    };
+                    
+                    let emergencies = JSON.parse(localStorage.getItem('examlock_emergencies') || '[]');
+                    emergencies.push(emergencyRecord);
+                    localStorage.setItem('examlock_emergencies', JSON.stringify(emergencies));
+                    
+                    alert('✅ Problema registrato. Se persiste, contatta l\'insegnante.');
+                    this.logEvent('EMERGENCY_REPORT', `Problema: ${problem.substring(0, 50)}...`);
                 }
-                
-                document.getElementById('logEntries').prepend(logEntry);
-                
-                // Mantieni massimo 20 log visibili
-                const allLogs = document.querySelectorAll('.log-entry');
-                if (allLogs.length > 20) {
-                    allLogs[allLogs.length - 1].remove();
-                }
-                
-                console.log(`[QuizProtection] ${message}`);
+            }
+            
+            logEvent(type, message) {
+                const timestamp = new Date().toLocaleTimeString('it-IT');
+                console.log(`[${timestamp}] ${type}: ${message}`);
+            }
+            
+            showError(message) {
+                console.error('❌ Errore:', message);
+                alert(`ERRORE: ${message}`);
+            }
+            
+            showFatalError(message) {
+                document.body.innerHTML = `
+                    <div style="
+                        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                        background: #0a0a0a; color: white; display: flex;
+                        flex-direction: column; justify-content: center;
+                        align-items: center; text-align: center; padding: 20px;
+                    ">
+                        <h1 style="color: #ff4444; margin-bottom: 20px;">❌ ERRORE CRITICO</h1>
+                        <p style="font-size: 20px; margin-bottom: 30px;">${message}</p>
+                        <button onclick="window.location.href='index.html'" 
+                                style="padding: 15px 30px; background: #4285f4; 
+                                       color: white; border: none; border-radius: 10px;
+                                       font-size: 18px; cursor: pointer;">
+                            ↩️ TORNA ALLA PAGINA INIZIALE
+                        </button>
+                    </div>
+                `;
             }
         }
-
-        // Avvia il sistema quando la pagina è pronta
+        
+        // ==================== INIZIALIZZAZIONE ====================
         document.addEventListener('DOMContentLoaded', () => {
-            window.quizProtection = new QuizProtectionSystem();
+            console.log('🚀 Pagina quiz-locked.html caricata');
+            
+            // Forza il focus su questa finestra
+            window.focus();
+            
+            // Avvia sistema protezione dopo 1 secondo
+            setTimeout(() => {
+                try {
+                    window.quizSystem = new QuizProtectionSystem();
+                    console.log('✅ Sistema protezione inizializzato con successo');
+                } catch (error) {
+                    console.error('❌ Errore nell\'inizializzazione:', error);
+                    alert('Errore nel sistema di protezione. Ricarica la pagina.');
+                }
+            }, 1000);
+            
+            // Tenta fullscreen al primo click
+            let fullscreenRequested = false;
+            document.addEventListener('click', () => {
+                if (!fullscreenRequested && document.documentElement.requestFullscreen) {
+                    fullscreenRequested = true;
+                    document.documentElement.requestFullscreen().catch(e => {
+                        console.log('Fullscreen non immediatamente disponibile');
+                    });
+                }
+            }, { once: true });
+        });
+        
+        // Funzione globale per nascondere avviso
+        window.hideViolationAlert = function() {
+            if (window.quizSystem) {
+                window.quizSystem.hideViolationAlert();
+            } else {
+                document.getElementById('violationAlert').style.display = 'none';
+            }
+        };
+        
+        // Impedisci chiusura facile della finestra
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = 'Chiudendo questa finestra, il quiz verrà invalidato. Sei sicuro?';
+            return e.returnValue;
         });
     </script>
 </body>
